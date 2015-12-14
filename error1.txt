@@ -1,0 +1,6 @@
+Load the training, test and store data using pandas
+build train features
+build test features
+['Store', 'CompetitionDistance', 'Promo', 'Promo2SinceWeek', 'Promo2SinceYear', 'SchoolHoliday', 'StoreType', 'Assortment', 'StateHoliday', 'Month', 'Day', 'Year', 'Quarter', 'Promo2Indicator', 'CompetitionTime']
+Train a XGBoost model
+Make predictions on the test set

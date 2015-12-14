@@ -1,7 +1,9 @@
 
 # coding: utf-8
 
-# In[14]:
+# In[1]:
+
+## authored by wuyi
 
 import pandas as pd
 import numpy as np
@@ -12,7 +14,7 @@ import datetime
 dt = datetime.datetime.now()
 
 
-# In[15]:
+# In[2]:
 
 def rmspe(y, yhat):
     # y = true data
@@ -25,7 +27,7 @@ def rmspe_xg(yhat, y):
     return "rmspe", rmspe(y,yhat)
 
 
-# In[16]:
+# In[3]:
 
 monthdic = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -33,15 +35,15 @@ def promo2_indicator(row):
     if row['PromoInterval'] is np.NaN:
         return 0
     try:
-    	if monthdic[row['Month']-1] == row['PromoInterval']:
-    		return 1
+        if monthdic[row['Month']-1] == row['PromoInterval']:
+            return 1
     except:
-	    if monthdic[row['Month']-1] in row['PromoInterval']:
-	        return 1
+        if monthdic[row['Month']-1] in row['PromoInterval']:
+            return 1
     return 0
 
 
-# In[17]:
+# In[4]:
 
 def build_features(features, data):
     # remove NaNs
@@ -57,7 +59,7 @@ def build_features(features, data):
     data.Assortment.replace(mapping, inplace=True)
     data.StateHoliday.replace(mapping, inplace=True)
     
-    features.extend(['Month', 'Day', 'Year', 'Quarter'])
+    features.extend(['Month', 'Day', 'Year', 'Quarter','DayOfWeek'])
     data['Month'] = data.Date.apply(lambda x: x.month)
     data['Day'] = data.Date.apply(lambda x: x.day)
     data['Year'] = data.Date.apply(lambda x: x.year)
@@ -68,7 +70,7 @@ def build_features(features, data):
     data['CompetitionTime'] = data.Month - data.CompetitionOpenSinceMonth + (data.Year - data.CompetitionOpenSinceYear) * 12
 
 
-# In[19]:
+# In[5]:
 
 # main script
 
@@ -87,6 +89,7 @@ test = pd.read_csv("../data/test.csv", parse_dates=[3], dtype = types)
 train = pd.read_csv("../data/train.csv", parse_dates=[2], dtype = types)
 test = pd.merge(test, store, on = "Store", how = "left")
 train = pd.merge(train, store, on = "Store", how = "left")
+train = train[train.Sales > 0]
 
 features = []
 print("build train features")
@@ -95,12 +98,16 @@ print("build test features")
 build_features([], test)
 print(features)
 
+
+
+# In[8]:
+
 params = {"objective": "reg:linear",
           "booster" : "gbtree",
-          "eta": 0.05,
-          "max_depth": 10,
-          "subsample": 0.9,
-          "colsample_bytree": 0.7,
+          "eta": 0.01,
+          "max_depth": 6,
+          "subsample": 1,
+          "colsample_bytree": 0.5,
           "silent": 1,
           "seed": 1301
           }
@@ -114,7 +121,16 @@ y_valid = np.log1p(X_valid.Sales)
 dtrain = xgb.DMatrix(X_train[features], y_train)
 dvalid = xgb.DMatrix(X_valid[features], y_valid)
 
+#X_train = train
+#y_train = np.log1p(X_train.Sales)
+#dtrain = xgb.DMatrix(X_train[features], y_train)
+
+
+# In[ ]:
+
 watchlist = [(dtrain, 'train'), (dvalid, 'eval')]
+#watchlist = [(dtrain, 'train')]
+
 gbm = xgb.train(params, dtrain, num_boost_round, evals=watchlist,   early_stopping_rounds=100, feval=rmspe_xg, verbose_eval=True)
 
 # predict
