@@ -37,7 +37,6 @@ def build_features(features, data):
     data.fillna(0, inplace=True)
     data.loc[data.Open.isnull(), 'Open'] = 1   
     # Use some properties directly
-    #features.extend(['Store', 'CompetitionDistance', 'CompetitionOpenSinceMonth','CompetitionOpenSinceYear', 'Promo', 'Promo2', 'Promo2SinceWeek','Promo2SinceYear'])
     features.extend(['Store', 'CompetitionDistance', 
                       'Promo','Promo2SinceWeek','Promo2SinceYear'])
 
@@ -52,11 +51,6 @@ def build_features(features, data):
     data.StateHoliday.replace(mappings, inplace=True)
 
     features.extend(['month', 'day', 'year'])
-    #data['year'] = data.Date.dt.year
-    #data['month'] = data.Date.dt.month
-    #data['day'] = data.Date.dt.day
-    #data['DayOfWeek'] = data.Date.dt.dayofweek
-    #data['Promo2Indicator'] = data.apply(promo2_indicator, axis = 1)
     temp = data[data.CompetitionOpenSinceMonth.notnull()]
     data['CompetitionTime'] = temp.month - temp.CompetitionOpenSinceMonth + (temp.year - temp.CompetitionOpenSinceYear) * 12
     temp = data[data.Promo2SinceWeek.notnull()]
@@ -67,7 +61,6 @@ def build_features(features, data):
     data['Quarter'] = data.Date.dt.quarter
     data['WeekOfYear'] = data.Date.dt.week
     features.extend(['Weekday','Quarter','WeekOfYear'])
-
 
 ## Start of main script
 
@@ -81,25 +74,9 @@ types = {'CompetitionOpenSinceYear': np.dtype(int),
          'CompetitionDistance':np.dtype(float),
          'StoreType':np.dtype(str),
          'Assortment':np.dtype(str)}
-#train = pd.read_csv("train.csv", parse_dates=[2], dtype=types)
-#test = pd.read_csv("test.csv", parse_dates=[3], dtype=types)
-#store = pd.read_csv("store_new.csv")
+
 train = pd.read_csv("train_feature.csv",parse_dates=[2])
 test = pd.read_csv("test_feature.csv",parse_dates=[3])
-
-#print("Assume store open, if not provided")
-#train.fillna(1, inplace=True)
-#test.fillna(1, inplace=True)
-
-#print("Consider only open stores for training. Closed stores wont count into the score.")
-#train = train[train["Open"] != 0]
-#print("Use only Sales bigger than zero. Simplifies calculation of rmspe")
-#train = train[train["Sales"] > 0]
-
-#print("Join with store")
-#train = pd.merge(train, store, on='Store')
-#test = pd.merge(test, store, on='Store')
-#print train[train.PromoInterval.notnull()].head()
 
 features = []
 
@@ -138,12 +115,6 @@ print("Validating")
 yhat = gbm.predict(xgb.DMatrix(X_valid[features]))
 error = rmspe(X_valid.Sales.values, np.expm1(yhat))
 print('RMSPE: {:.6f}'.format(error))
-
-#print("Make predictions on the traini#ng set")
-#train_d = xgb.DMatrix(train[features])
-#train_probs = gbm.predict(train_d)
-#train_result = pd.DataFrame({"Store":train["Store"],"Date":train["Date"],"Sales":np.expm1(train_probs),"Residuals":train.Sales.values-np.expm1(train_probs)})
-#train_result.to_csv("train_prediction.csv",index=False)
 
 print("Make predictions on the test set")
 dtest = xgb.DMatrix(test[features])
